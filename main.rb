@@ -37,8 +37,8 @@ class Order
   def initialize(model)
     @id = model['id']
     @status = model['status']
-    @created_at = model['created_at']
-    @updated_at = model['updated_at']
+    @created_at = Time.at(model['created_at'])
+    @updated_at = Time.at(model['updated_at'])
   end
 end
 
@@ -47,9 +47,9 @@ class Trade
 
   def initialize(model)
     @id = model['id']
-    @pnl = model['pnl']
-    @created_at = model['created_at']
-    @updated_at = model['updated_at']
+    @pnl = model['pnl'].to_f
+    @created_at = Time.at(model['created_at'])
+    @updated_at = Time.at(model['updated_at'])
   end
 end
 
@@ -108,10 +108,12 @@ class QuoineAPI
     Order.new(JSON.parse(response))
   end
 
-  def self.get_trades(status: :open)
-    STDERR.puts "Quoine API: GET /trades?status=#{status}"
+  def self.get_trades(options = { status: :open })
+    query = options.map { |key, val| "#{key}=#{val}" }.join('&')
 
-    path = "/trades?status=#{status}"
+    STDERR.puts "Quoine API: GET /trades?#{query}"
+
+    path = "/trades?#{query}"
     response = request_with_authentication(Net::HTTP::Get, path)
 
     hash = JSON.parse(response)
@@ -173,11 +175,22 @@ class LineAPI
   def self.send_alert(text)
     @client.push_message(ENV['LINE_USER_ID'], { type: 'text', text: text })
   end
+
+  def self.report_trades(start_time, trades)
+    duration = "#{start_time} ~ #{Time.now}"
+    total_pnl = trades.map(&:pnl).sum
+
+    @client.push_message(ENV['LINE_USER_ID'], {
+      type: 'text',
+      text: "Duration: #{duration}\nTotal pnl: #{total_pnl}"
+    })
+  end
 end
 
 def main
-  all_trades = []
+  all_orders = []
   locked_untill = Time.now - 1
+  started_at = Time.now
 
   loop do
     current_time = Time.now
@@ -193,8 +206,8 @@ def main
     order_price_min = prices.min * 0.99
     order_price_max = prices.max * 1.01
 
-    QuoineAPI.create_order(side: 'buy',  quantity: 0.01, price: order_price_min)
-    QuoineAPI.create_order(side: 'sell', quantity: 0.01, price: order_price_max)
+    all_orders << QuoineAPI.create_order(side: 'buy',  quantity: 0.01, price: order_price_min)
+    all_orders << QuoineAPI.create_order(side: 'sell', quantity: 0.01, price: order_price_max)
 
     sleep(60)
 
@@ -203,7 +216,6 @@ def main
     end
 
     QuoineAPI.get_trades.each do |trade|
-      all_trades << trade
       will_close_at = trade.updated_at + 60
 
       Thread.new do
@@ -238,6 +250,10 @@ ensure
   QuoineAPI.get_trades.each do |trade|
     QuoineAPI.close_trade(trade.id)
   end
+
+  trades = QuoineAPI.get_trades(limit: 1<<30).select { |trade| trade.created_at > started_at }
+
+  LineAPI.report_trades(started_at, trades)
 end
 
 main
