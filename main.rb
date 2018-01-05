@@ -45,7 +45,7 @@ class Order
 end
 
 class Trade
-  attr_reader :id, :pnl, :updated_at, :created_at, :open_price, :stop_loss, :take_profit
+  attr_reader :id, :pnl, :updated_at, :created_at, :open_price, :side, :stop_loss, :take_profit
 
   def initialize(model)
     @id = model['id']
@@ -243,7 +243,8 @@ def main
     order_price_max = prices.max * UPPER_MARGIN
 
     QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: order_price_min)
-    QuoineAPI.create_order(side: 'sell', quantity: QUANTITY, price: order_price_max)
+    QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: prices.min * 0.99)
+    # QuoineAPI.create_order(side: 'sell', quantity: QUANTITY, price: order_price_max)
 
     sleep(60)
 
