@@ -182,7 +182,7 @@ class LineAPI
   def self.report_trade(trade)
     @client.push_message(ENV['LINE_USER_ID'], {
        type: 'text',
-       text: "#{Time.now}: A trade was closed with #{trade.pnl} pnl."
+       text: "#{Time.now.strftime('%Y/%m/%d %H:%M:%S')}: A trade was closed with #{trade.pnl} pnl."
      })
   end
 
@@ -191,7 +191,7 @@ class LineAPI
   end
 
   def self.report_trades(start_time, trades)
-    duration = "#{start_time} ~ #{Time.now}"
+    duration = "#{start_time.strftime('%Y/%m/%d %H:%M:%S')} ~ #{Time.now.strftime('%Y/%m/%d %H:%M:%S')}"
     total_pnl = trades.map(&:pnl).sum
 
     @client.push_message(ENV['LINE_USER_ID'], {
@@ -245,9 +245,9 @@ def main
         LineAPI.report_trade(trade)
 
         # Lock 10 minitues to avoid the great slump.
-        if trade.pnl < 0
-          locked_untill = Time.now + 600
-        end
+#        if trade.pnl < 0
+#          locked_untill = Time.now + 600
+#        end
       end
     end
   end
