@@ -53,6 +53,7 @@ class Trade
     @created_at = Time.at(model['created_at'])
     @updated_at = Time.at(model['updated_at'])
     @open_price = model['open_price'].to_f
+    @side = model['side']
     @stop_loss = model['stop_loss'].to_f
     @take_profit = model['take_profit'].to_f
   end
