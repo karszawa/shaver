@@ -200,7 +200,7 @@ class LineAPI
   def self.report_trade(trade)
     @client.push_message(ENV['LINE_USER_ID'], {
        type: 'text',
-       text: "#{Time.now.strftime('%Y/%m/%d %H:%M:%S')}: A trade was closed with #{trade.pnl} pnl."
+       text: "#{Time.now.strftime('%Y/%m/%d %H:%M:%S')}: Closed #{trade.side} position with #{trade.pnl} pnl."
      })
   end
 
