@@ -16,7 +16,7 @@ PRODUCT_ID = 5 # BTCJPY
 LEVERAGE_LEVEL = 25
 LOWER_MARGIN = 0.995
 UPPER_MARGIN = 1.005
-QUANTITY = 0.1
+QUANTITY = 0.5
 
 class Execution
   attr_reader :id, :quantity, :price, :taker_side, :created_at
