@@ -59,6 +59,8 @@ class QuoineAPI
 
     response = Net::HTTP.get(URI.parse("#{BASE_URL}/executions?product_id=#{PRODUCT_ID}&timestamp=#{timestamp}"))
 
+    STDERR.puts response
+
     hash = JSON.parse(response)
     hash.map { |model| Execution.new(model) }
   end
@@ -69,6 +71,8 @@ class QuoineAPI
     path = "/orders?status=#{status}"
     response = request_with_authentication(Net::HTTP::Get, path)
 
+    STDERR.puts response
+
     hash = JSON.parse(response)
     hash['models'].map { |model| Order.new(model) }
   end
@@ -78,6 +82,8 @@ class QuoineAPI
 
     path = "/orders/#{id}"
     response = request_with_authentication(Net::HTTP::Get, path)
+
+    STDERR.puts response
 
     Order.new(JSON.parse(response))
   end
@@ -96,6 +102,8 @@ class QuoineAPI
       funding_currency: 'JPY'
     })
 
+    STDERR.puts response
+
     Order.new(JSON.parse(response))
   end
 
@@ -104,6 +112,8 @@ class QuoineAPI
 
     path = "/orders/#{id}/cancel"
     response = request_with_authentication(Net::HTTP::Put, path)
+
+    STDERR.puts response
 
     Order.new(JSON.parse(response))
   end
@@ -116,6 +126,8 @@ class QuoineAPI
     path = "/trades?#{query}"
     response = request_with_authentication(Net::HTTP::Get, path)
 
+    STDERR.puts response
+
     hash = JSON.parse(response)
     hash['models'].map { |model| Trade.new(model) }
   end
@@ -125,6 +137,8 @@ class QuoineAPI
 
     path = "/trades/#{id}/close"
     response = request_with_authentication(Net::HTTP::Put, path)
+
+    STDERR.puts response
 
     Trade.new(JSON.parse(response))
   end
@@ -202,6 +216,11 @@ def main
 
     executions = QuoineAPI.get_executions_by_timestamp(current_time.to_i - 60)
     prices = executions.map(&:price)
+
+    if prices.empty?
+      sleep(60)
+      next
+    end
 
     order_price_min = prices.min * 0.99
     order_price_max = prices.max * 1.01
