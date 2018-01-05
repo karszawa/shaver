@@ -13,8 +13,10 @@ require 'line/bot'
 
 BASE_URL = "https://api.quoine.com"
 PRODUCT_ID = 5 # BTCJPY
-RECORD_LIMIT = 100
 LEVERAGE_LEVEL = 25
+LOWER_MARGIN = 0.995
+UPPER_MARGIN = 1.005
+QUANTITY = 0.1
 
 class Execution
   attr_reader :id, :quantity, :price, :taker_side, :created_at
@@ -43,13 +45,16 @@ class Order
 end
 
 class Trade
-  attr_reader :id, :pnl, :updated_at, :created_at
+  attr_reader :id, :pnl, :updated_at, :created_at, :open_price, :stop_loss, :take_profit
 
   def initialize(model)
     @id = model['id']
     @pnl = model['pnl'].to_f
     @created_at = Time.at(model['created_at'])
     @updated_at = Time.at(model['updated_at'])
+    @open_price = model['open_price'].to_f
+    @stop_loss = model['stop_loss'].to_f
+    @take_profit = model['take_profit'].to_f
   end
 end
 
@@ -143,6 +148,18 @@ class QuoineAPI
     Trade.new(JSON.parse(response))
   end
 
+  # params = { take_profit: 1 << 30, stop_loss: 0 }
+  def self.update_trade(id, params)
+    STDERR.puts "Quoine API: PUT /trades/#{id}"
+
+    path = "/trades/#{id}"
+    response = request_with_authentication(Net::HTTP::Put, path, body = params.to_json)
+
+    STDERR.puts response
+
+    Trade.new(JSON.parse(response))
+  end
+
   def self.request_with_authentication(http_request, path, body = "")
     uri = URI.parse(BASE_URL)
     http = Net::HTTP.new(uri.host, uri.port)
@@ -202,7 +219,6 @@ class LineAPI
 end
 
 def main
-  all_orders = []
   locked_untill = Time.now - 1
   started_at = Time.now
 
@@ -222,11 +238,11 @@ def main
       next
     end
 
-    order_price_min = prices.min * 0.995
-    order_price_max = prices.max * 1.005
+    order_price_min = prices.min * LOWER_MARGIN
+    order_price_max = prices.max * UPPER_MARGIN
 
-    all_orders << QuoineAPI.create_order(side: 'buy',  quantity: 0.5, price: order_price_min)
-    all_orders << QuoineAPI.create_order(side: 'sell', quantity: 0.5, price: order_price_max)
+    QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: order_price_min)
+    QuoineAPI.create_order(side: 'sell', quantity: QUANTITY, price: order_price_max)
 
     sleep(60)
 
@@ -235,10 +251,19 @@ def main
     end
 
     QuoineAPI.get_trades.each do |trade|
-      will_close_at = trade.updated_at + 60
+      if trade.side == 'long'
+        QuoineAPI.update_trade(trade.id, { take_profit: trade.open_price / LOWER_MARGIN })
+      end
+
+      if trade.side == 'short'
+        QuoineAPI.update_trade(trade.id, { take_profit: trade.open_price / UPPER_MARGIN })
+      end
+
+      # will_close_at = trade.updated_at + 60
 
       Thread.new do
-        sleep(will_close_at - Time.now)
+        # sleep(will_close_at - Time.now)
+        sleep(60)
 
         trade = QuoineAPI.close_trade(trade.id)
 
