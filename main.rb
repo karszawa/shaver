@@ -39,8 +39,8 @@ class Order
   def initialize(model)
     @id = model['id']
     @status = model['status']
-    @created_at = Time.at(model['created_at'])
-    @updated_at = Time.at(model['updated_at'])
+    @created_at = Time.at(model['created_at'].to_i)
+    @updated_at = Time.at(model['updated_at'].to_i)
   end
 end
 
@@ -50,8 +50,8 @@ class Trade
   def initialize(model)
     @id = model['id']
     @pnl = model['pnl'].to_f
-    @created_at = Time.at(model['created_at'])
-    @updated_at = Time.at(model['updated_at'])
+    @created_at = Time.at(model['created_at'].to_i)
+    @updated_at = Time.at(model['updated_at'].to_i)
     @open_price = model['open_price'].to_f
     @side = model['side']
     @stop_loss = model['stop_loss'].to_f
@@ -281,7 +281,7 @@ def main
 rescue Interrupt
   puts "Interrupted."
 rescue => e
-  LineAPI.send_alert(e.message)
+  LineAPI.send_alert("#{e.backtrace_locations}\n#{e.message}")
 
   raise e
 ensure
