@@ -243,8 +243,8 @@ def main
     order_price_max = prices.max * UPPER_MARGIN
 
     QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: order_price_min)
-    QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: prices.min * 0.99)
-    # QuoineAPI.create_order(side: 'sell', quantity: QUANTITY, price: order_price_max)
+    # QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: prices.min * 0.99)
+    QuoineAPI.create_order(side: 'sell', quantity: QUANTITY, price: order_price_max)
 
     sleep(60)
 
@@ -272,9 +272,9 @@ def main
         LineAPI.report_trade(trade)
 
         # Lock 10 minitues to avoid the great slump.
-#        if trade.pnl < 0
-#          locked_untill = Time.now + 600
-#        end
+        if trade.pnl < 0
+          locked_untill = Time.now + 600
+        end
       end
     end
   end
