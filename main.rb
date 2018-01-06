@@ -16,7 +16,10 @@ PRODUCT_ID = 5 # BTCJPY
 LEVERAGE_LEVEL = 25
 LOWER_MARGIN = 0.995
 UPPER_MARGIN = 1.005
-QUANTITY = 0.5
+QUANTITY = 0.1
+
+class APIError < StandardError
+end
 
 class Execution
   attr_reader :id, :quantity, :price, :taker_side, :created_at
@@ -69,6 +72,9 @@ class QuoineAPI
 
     hash = JSON.parse(response)
     hash.map { |model| Execution.new(model) }
+  rescue JSON::ParserError => e
+    STDERR.puts "#{e.backtrace.first}: #{e.message} (#{e.class})", e.backtrace.drop(1).map { |s| "\t#{s}" }
+    raise APIError
   end
 
   def self.get_orders(status: :live)
@@ -185,7 +191,11 @@ class QuoineAPI
 
     response = http.request(request)
 
-    # response.code
+    if response.code != "200"
+      STDERR.puts "Code: #{response.code}"
+      STDERR.puts "Body: #{response.body}"
+      raise APIError
+    end
 
     response.body
   end
@@ -280,8 +290,12 @@ def main
   end
 rescue Interrupt
   puts "Interrupted."
+rescue APIError
+  STDERR.puts "APIError occured. Sleep 60 seconds."
+  sleep(60)
+  retry
 rescue => e
-  LineAPI.send_alert("#{e.backtrace_locations}\n#{e.message}")
+  LineAPI.send_alert("#{e.backtrace.first}: #{e.message} (#{e.class})", e.backtrace.drop(1).map{|s| "\t#{s}"})
 
   raise e
 ensure
