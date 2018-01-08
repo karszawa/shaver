@@ -14,8 +14,8 @@ require 'line/bot'
 BASE_URL = "https://api.quoine.com"
 PRODUCT_ID = 5 # BTCJPY
 LEVERAGE_LEVEL = 25
-LOWER_MARGIN = 0.995
-UPPER_MARGIN = 1.005
+LOWER_MARGIN = 0.99
+UPPER_MARGIN = 1.01
 QUANTITY = 0.1
 
 class APIError < StandardError
