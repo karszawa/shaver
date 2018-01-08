@@ -249,8 +249,8 @@ def main
       next
     end
 
-    order_price_min = prices.min * LOWER_MARGIN
-    order_price_max = prices.max * UPPER_MARGIN
+    order_price_min = prices.first * LOWER_MARGIN
+    order_price_max = prices.first * UPPER_MARGIN
 
     QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: order_price_min)
     # QuoineAPI.create_order(side: 'buy',  quantity: QUANTITY, price: prices.min * 0.99)
